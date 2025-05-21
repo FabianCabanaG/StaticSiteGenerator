@@ -1,49 +1,72 @@
 import unittest
 from textnode import TextNode, TextType
-from htmlnode import LeafNode
-from convert_functions import text_node_to_html_node 
+from convert_functions import split_nodes_delimiter 
 
-class TestTextNodeToHTMLNode(unittest.TestCase):
-    def test_text_node(self):
-        node = TextNode("Hello", TextType.TEXT)
-        expected = LeafNode(value="Hello")
-        self.assertEqual(text_node_to_html_node(node), expected)
+class TestSplitNodesDelimiter(unittest.TestCase):
+    def test_code_delimiter(self):
+        node = TextNode("This is `code` text", TextType.TEXT)
+        result = split_nodes_delimiter([node], "`", TextType.CODE)
+        expected = [
+            TextNode("This is ", TextType.TEXT),
+            TextNode("code", TextType.CODE),
+            TextNode(" text", TextType.TEXT),
+        ]
+        self.assertEqual(result, expected)
 
-    def test_bold_node(self):
-        node = TextNode("Bold", TextType.BOLD)
-        expected = LeafNode("b", "Bold")
-        self.assertEqual(text_node_to_html_node(node), expected)
+    def test_no_delimiters(self):
+        node = TextNode("No code here", TextType.TEXT)
+        result = split_nodes_delimiter([node], "`", TextType.CODE)
+        self.assertEqual(result, [node])
 
-    def test_italic_node(self):
-        node = TextNode("Italic", TextType.ITALIC)
-        expected = LeafNode("i", "Italic")
-        self.assertEqual(text_node_to_html_node(node), expected)
+    def test_multiple_delimiters(self):
+        node = TextNode("`one` and `two`", TextType.TEXT)
+        result = split_nodes_delimiter([node], "`", TextType.CODE)
+        expected = [
+            TextNode("one", TextType.CODE),
+            TextNode(" and ", TextType.TEXT),
+            TextNode("two", TextType.CODE),
+        ]
+        self.assertEqual(result, expected)
 
-    def test_code_node(self):
-        node = TextNode("print('hello')", TextType.CODE)
-        expected = LeafNode("code", "print('hello')")
-        self.assertEqual(text_node_to_html_node(node), expected)
+    def test_bold_delimiter_single(self):
+        node = TextNode("This is **bold** text", TextType.TEXT)
+        result = split_nodes_delimiter([node], "**", TextType.BOLD)
+        expected = [
+            TextNode("This is ", TextType.TEXT),
+            TextNode("bold", TextType.BOLD),
+            TextNode(" text", TextType.TEXT),
+        ]
+        self.assertEqual(result, expected)
 
-    def test_link_node(self):
-        node = TextNode("Google", TextType.LINK, "https://www.google.com")
-        expected = LeafNode("a", "Google", {"href": "https://www.google.com"})
-        self.assertEqual(text_node_to_html_node(node), expected)
+    def test_bold_delimiter_multiple(self):
+        node = TextNode("**bold1** and **bold2**", TextType.TEXT)
+        result = split_nodes_delimiter([node], "**", TextType.BOLD)
+        expected = [
+            TextNode("bold1", TextType.BOLD),
+            TextNode(" and ", TextType.TEXT),
+            TextNode("bold2", TextType.BOLD),
+        ]
+        self.assertEqual(result, expected)
 
-    def test_image_node(self):
-        node = TextNode("Logo", TextType.IMAGE, "https://img.com/logo.png")
-        expected = LeafNode("img", "", {"src": "https://img.com/logo.png", "alt": "Logo"})
-        self.assertEqual(text_node_to_html_node(node), expected)
-
-    def test_invalid_type_raises(self):
-        with self.assertRaises(Exception):
-            TextNode("Invalid", "UNKNOWN")
+    def test_italic_delimiter_single(self):
+        node = TextNode("This is _italic_ text", TextType.TEXT)
+        result = split_nodes_delimiter([node], "_", TextType.ITALIC)
+        expected = [
+            TextNode("This is ", TextType.TEXT),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" text", TextType.TEXT),
+        ]
+        self.assertEqual(result, expected)
     
-    def test_text(self):
-        node = TextNode("This is a text node", TextType.TEXT)
-        html_node = text_node_to_html_node(node)
-        self.assertEqual(html_node.tag, None)
-        self.assertEqual(html_node.value, "This is a text node")
-
+    def test_italic_delimiter_multiple(self):
+        node = TextNode("_first_ and _second_", TextType.TEXT)
+        result = split_nodes_delimiter([node], "_", TextType.ITALIC)
+        expected = [
+            TextNode("first", TextType.ITALIC),
+            TextNode(" and ", TextType.TEXT),
+            TextNode("second", TextType.ITALIC),
+        ]
+        self.assertEqual(result, expected)
 
 if __name__ == "__main__":
     unittest.main()
